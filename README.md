@@ -1,6 +1,6 @@
 # gdb-mcp Server
 
-![MCP server running](./images/running_screen.png)
+![MCP server running](images/running_screen.png?raw=1)
 
 ## English
 
