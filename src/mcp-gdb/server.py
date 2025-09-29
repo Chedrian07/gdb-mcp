@@ -74,6 +74,21 @@ def _result_to_payload(result: GDBCommandResult) -> Dict[str, object]:
     return payload
 
 
+def _exception_payload(command: str, *, error_type: str, message: str) -> Dict[str, object]:
+    return {
+        "command": command,
+        "success": False,
+        "result_class": None,
+        "console_output": "",
+        "result_payload": None,
+        "async_records": [],
+        "stderr_output": "",
+        "raw_response": "",
+        "error_type": error_type,
+        "error_message": message,
+    }
+
+
 async def _exec_console_command(command: str, *, timeout: float = _DEFAULT_COMMAND_TIMEOUT) -> Dict[str, object]:
     _touch_activity()
     await _ensure_running()
@@ -207,8 +222,13 @@ async def run_gdb_command(
             result = await _SESSION.execute_mi(command, timeout=timeout)
         else:
             result = await _SESSION.execute_console(command, timeout=timeout)
-    except (GDBCommandTimeout, GDBSessionError) as exc:
-        raise RuntimeError(str(exc))
+    except GDBCommandTimeout as exc:
+        return _exception_payload(command, error_type="timeout", message=str(exc))
+    except GDBSessionError as exc:
+        return _exception_payload(command, error_type="session-error", message=str(exc))
+    except Exception as exc:  # pragma: no cover - defensive
+        _LOGGER.exception("Unexpected error while executing GDB command %s", command)
+        return _exception_payload(command, error_type="unexpected", message=str(exc))
 
     return _result_to_payload(result)
 
@@ -236,14 +256,15 @@ async def run_gdb_commands(
             else:
                 res = await _SESSION.execute_console(command, timeout=timeout)
                 results.append(_result_to_payload(res))
-        except (GDBCommandTimeout, GDBSessionError) as exc:
-            results.append(
-                {
-                    "command": command,
-                    "success": False,
-                    "error": str(exc),
-                }
-            )
+        except GDBCommandTimeout as exc:
+            results.append(_exception_payload(command, error_type="timeout", message=str(exc)))
+            continue
+        except GDBSessionError as exc:
+            results.append(_exception_payload(command, error_type="session-error", message=str(exc)))
+            continue
+        except Exception as exc:  # pragma: no cover - defensive
+            _LOGGER.exception("Unexpected error while executing GDB command %s", command)
+            results.append(_exception_payload(command, error_type="unexpected", message=str(exc)))
             continue
     return results
 

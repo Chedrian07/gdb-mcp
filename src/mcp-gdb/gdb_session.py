@@ -28,6 +28,8 @@ _LOGGER = logging.getLogger(__name__)
 
 _PROMPT = b"(gdb) "
 _DEFAULT_TIMEOUT = 15.0
+_SUCCESS_RESULT_CLASSES = {"done", "running", "connected", "exit"}
+_ERROR_RESULT_CLASSES = {"error"}
 
 
 class GDBSessionError(RuntimeError):
@@ -277,12 +279,14 @@ class GDBSession:
         if result_record is not None:
             result_class = result_record.get("class")
             result_payload = result_record.get("payload")
-            success = result_class in (None, "done", "running", "exit")
-        else:
-            success = True
-
-        if stderr_output:
-            success = False
+            if result_class is None:
+                success = True
+            elif result_class in _SUCCESS_RESULT_CLASSES:
+                success = True
+            elif result_class in _ERROR_RESULT_CLASSES:
+                success = False
+            else:
+                success = result_class not in _ERROR_RESULT_CLASSES
 
         return GDBCommandResult(
             command=original,
