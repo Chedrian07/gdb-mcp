@@ -9,13 +9,19 @@ The **gdb-mcp** project implements a Model Context Protocol (MCP) server that ex
 
 Key capabilities include:
 - Asynchronous GDB session management with automatic idle shutdown (default 90 s, configurable via `GDB_MCP_IDLE_TIMEOUT`).
-- High-level MCP tools mapped to common GDB workflows (execution control, break/watchpoints, stack & thread inspection, memory/data evaluation, remote debugging, documentation lookup).
+- **Streamlined 22 unified MCP tools** (reduced from 62) for better LLM context efficiency while maintaining full GDB functionality.
+- High-level tools consolidate similar operations: `breakpoint_control`, `execution_step`, `data_control`, etc.
 - Robust MI output parsing, error propagation, and command batching for multi-step operations.
 - Containerised distribution using Python 3.12, UV-based dependency management, and bundled `gdb` for reproducible environments.
 
+### Architecture Highlights
+- **Tool Consolidation**: 62 → 22 tools (64.5% reduction) improves LLM context window usage
+- **Unified Interface**: Similar operations grouped into single tools with action parameters
+- **Full Feature Coverage**: All GDB capabilities retained through consolidated APIs
+
 ### Repository Layout
 - `src/mcp-gdb/gdb_session.py` – Async wrapper around the GDB MI interpreter, featuring result parsing and timeout handling.
-- `src/mcp-gdb/server.py` – MCP server definition with dozens of tools mirroring the GDB cheat sheet in `docs/`.
+- `src/mcp-gdb/server.py` – MCP server definition with 22 consolidated tools providing comprehensive GDB access.
 - `docs/eng`, `docs/kor` – Concise GDB feature reference used by documentation tools.
 - `Dockerfile` – Production image build with `python:3.12-slim`, UV package management, and pre-installed `gdb`.
 - `images/running_screen.png` – Example screenshot of the server running inside Docker.
